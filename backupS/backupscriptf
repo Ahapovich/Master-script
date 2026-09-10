@@ -1,0 +1,50 @@
+#!/bin/bash
+if [ "$#" -ne 3 ] ; then
+echo "ERROR: 3 arguments are required"
+echo "Usage: ./backup.sh <source> <backup_directory> <number>"
+echo "ATTENTION! Number represents the number of days; all backup archives created before the specified date will be deleted. For example, if you enter 7, all backups older than 7 days will be deleted."
+exit 1
+fi
+SOURCE="$1"
+BACKUP_DIR="$2"
+RETENTION_DAYS="$3"
+
+if [[ ! -f "$SOURCE" && ! -d "$SOURCE" ]]; then
+    echo "ERROR: Source '$SOURCE' not found"
+    exit 1
+fi
+
+if [[ ! -r "$SOURCE" ]]; then
+    echo "ERROR: $SOURCE does not exist or you do not have permission to access it"
+    exit 1
+fi
+
+if ! [[ "$RETENTION_DAYS" =~ ^[0-9]+$ ]]; then
+    echo "ERROR: Retention days must be a number"
+    exit 1
+fi
+
+CURRENT_DATE=$(date +%Y-%m-%d_%H_%M_%S)
+ARCHIVE_NAME="backup_$CURRENT_DATE.tar.gz"
+FULL_ARCHIVE_ROAD="$BACKUP_DIR/$ARCHIVE_NAME"
+create_backup() {
+if tar -czf "$FULL_ARCHIVE_ROAD" "$SOURCE" ; then
+    echo "Backup ready"
+    echo "Backup name: $ARCHIVE_NAME"
+    echo "Backup dir is located: $BACKUP_DIR"
+    FILE_SIZE=$(du -sh "$FULL_ARCHIVE_ROAD" | cut -f1)
+    echo ""
+    echo "Archive size: $FILE_SIZE"
+else 
+    echo "Oops, we had a problem creating the archive"
+    exit 1
+fi
+}
+delete_old_backups() {
+if ! find "$BACKUP_DIR" -type f -name "backup_*.tar.gz" -mtime +"$RETENTION_DAYS" -delete ; then
+echo "ERROR: Unable to delete old archives"
+exit 1
+fi
+}
+create_backup
+delete_old_backups
