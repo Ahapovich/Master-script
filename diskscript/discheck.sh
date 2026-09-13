@@ -57,5 +57,13 @@ echo_disc
 exit 2
 fi
 }
-size_check
+wait=("." ".." "...")
+size_check &
+FUNC_PID=$!
+while kill -0 $FUNC_PID 2>/dev/null ; do
+for i in "${wait[@]}" ; do
+echo -ne "Procesing$i \r"
+sleep 0.1
+done
+done
 disc_check
