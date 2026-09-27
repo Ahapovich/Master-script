@@ -2,11 +2,11 @@
 GROUP=(web docker database security network)
 if [ ! -s "TOKEN.txt" ] ; then
 echo "TOKEN.txt is empty, please enter your bot token before starting"
-exit 2
+exit 3
 fi
 if [ ! -s "CHATID.txt" ] ; then
 echo "CHATID.txt is empty, please enter your chat ID before starting"
-exit 2
+exit 3
 fi
 TOKEN=$(cat TOKEN.txt | tr -d '[:space:]')
 CHAT_ID=$(cat CHATID.txt | tr -d '[:space:]')

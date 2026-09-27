@@ -2,16 +2,16 @@
 if [ "$#" -ne 1 ] ; then
 echo "ERROR: 1 argument are required"
 echo "Usage: ./discheck.sh <directory>"
-exit 1
+exit 3
 fi
 CHDIR="$1"
 if [[ ! -f "$CHDIR" && ! -d "$CHDIR" ]]; then
 	echo "ERROR: $CHDIR isnt file or directory"
-	exit 1
+	exit 3
 fi
 if [[ ! -r "$CHDIR" ]] ; then
 	echo "ERROR: $CHDIR does not exist or you do not have permission to access it"
-	exit 1
+	exit 3
 fi
 size_check() {
 local DIREC_SIZE DIREC_PATH
@@ -62,7 +62,7 @@ size_check &
 FUNC_PID=$!
 while kill -0 $FUNC_PID 2>/dev/null ; do
 for i in "${wait[@]}" ; do
-echo -ne "Procesing$i \r"
+echo -ne "Processing$i \r"
 sleep 0.1
 done
 done

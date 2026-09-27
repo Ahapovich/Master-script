@@ -1,8 +1,5 @@
 #!/bin/bash
 ANSWER="0"
-arg1="0"
-arg2="0"
-arg3="0"
 echo "Hello, this is the master script"
 echo "========================"
 echo "     BASH TOOLKIT"
@@ -45,7 +42,7 @@ exit 0
 ;;
 *)
 echo "The script has finished running. Wrong input."
-exit 2
+exit 3
 ;;
 esac
 echo "The script has finished running. See you soon."
