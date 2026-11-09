@@ -1,0 +1,6 @@
+NetworkManager
+systemd-resolved
+wg-quick@wg0
+openvpn
+dnsmasq
+keepalived
