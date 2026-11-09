@@ -1,6 +1,0 @@
-postgresql
-mysql
-mariadb
-redis-server
-mongod
-clickhouse-server

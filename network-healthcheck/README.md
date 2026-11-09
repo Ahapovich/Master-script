@@ -1,257 +1,223 @@
-# Linux Service Health Check
+# Bash Toolkit
 
-A simple Bash-based Linux service health check and self-healing script.
+A collection of Bash scripts for Linux system administration, monitoring, and maintenance.
 
-The script monitors user-defined system services, organizes them into configurable categories, attempts to restart failed services, and optionally sends an alert to Telegram when a service cannot be restored.
-
-This project was created as a Bash/Linux/DevOps learning project and demonstrates working with loops, arrays, conditional statements, files, `systemctl`, `curl`, and the Telegram Bot API.
+The project combines several independent Bash scripts into one **Master Script** with an interactive menu. Each module performs a specific system administration task, including service monitoring, log analysis, backup management, disk usage monitoring, and network diagnostics.
 
 ## Features
 
-- Checks multiple Linux services using `systemctl`
-- Organizes services into configurable categories
-- Reads services from separate `.txt` configuration files
-- Ignores empty lines and comments
-- Counts failed services
-- Groups failed services by category
-- Automatically attempts to restart failed services
-- Configurable number of restart attempts
-- Verifies service status after each restart attempt
-- Sends Telegram alerts when a service cannot be restored
-- Keeps Telegram credentials outside the main script
-- Allows service lists to be customized without modifying the Bash script
-- Uses separate configuration files for different service categories
+* 🔧 **Service Health Check**
+  * Monitors selected Linux system services
+  * Detects inactive or failed services
+  * Attempts to restart failed services (up to two attempts)
+  * Waits three seconds between restart attempts
+  * Groups monitored services by category
+  * Sends Telegram notifications when services cannot be restored
+
+* 📋 **Log Check**
+  * Searches log files for specified keywords or patterns
+  * Supports keywords such as `ERR`, `FAIL`, and `CRITICAL`
+  * Checks whether the specified log file exists and is readable
+  * Uses `grep` for log analysis
+
+* 💾 **Backup**
+  * Creates compressed `.tar.gz` archives
+  * Allows the user to specify the source directory
+  * Allows the user to specify the backup destination
+  * Supports configurable backup retention in days
+  * Automatically deletes old archives matching `backup_*.tar.gz`
+
+* 💿 **Disk Check**
+  * Displays file or directory size
+  * Displays filesystem usage information
+  * Checks storage utilization against predefined thresholds
+  * Shows a warning when usage exceeds 70%
+  * Reports a critical state when usage exceeds 85%
+  * Displays the ten largest entries on the affected filesystem
+
+* 🌐 **Network Health Check**
+  * Checks for an active network interface with an IPv4 address
+  * Detects the default gateway
+  * Tests gateway connectivity
+  * Checks internet connectivity using ICMP
+  * Verifies DNS resolution
+  * Tests HTTPS connectivity
 
 ## Project Structure
 
-```text
-.
-├── for.sh
-├── README.md
-├── .gitignore
-└── services/
-    ├── web.txt
-    ├── docker.txt
-    ├── database.txt
-    ├── security.txt
-    └── network.txt
-```
-
-> `TOKEN.txt` and `CHATID.txt` are created locally and are intentionally excluded from Git.
-
-## Service Configuration
-
-Each file inside the `services/` directory contains the names of systemd services that should be monitored.
-
-### Example
-
-`services/web.txt`
+The project is organized into separate directories for each system administration module.
 
 ```text
-nginx
-apache2
-httpd
+Master-script/
+├── .github/
+│   └── workflows/
+│       └── bash-check.yml
+├── backupS/
+│   └── backupscriptf
+├── diskscript/
+│   └── discheck.sh
+├── logscript/
+│   └── scriptlog.sh
+├── network-healthcheck/
+│   ├── network-check.sh
+│   └── README.md
+├── service-healthcheck/
+│   ├── services/
+│   │   ├── web.txt
+│   │   ├── docker.txt
+│   │   ├── database.txt
+│   │   ├── security.txt
+│   │   └── network.txt
+│   ├── service-healthcheck.sh
+│   ├── CHATID.txt
+│   └── TOKEN.txt
+└── masterscript.sh
 ```
 
-`services/docker.txt`
+The `masterscript.sh` file provides the main interactive menu:
 
 ```text
-docker
-containerd
+========================
+      BASH TOOLKIT
+========================
+
+1. Network Health Check
+2. Service Health Check
+3. Log Check
+4. Backup
+5. Disk Check
+0. Exit
 ```
-
-`services/database.txt`
-
-```text
-mysql
-mariadb
-postgresql
-redis
-```
-
-You can add, remove, or replace services according to your Linux system.
-
-Comments are supported:
-
-```text
-# Web servers
-nginx
-apache2
-```
-
-Empty lines are ignored automatically.
-
-## Service Groups
-
-The monitored groups are defined in the script:
-
-```bash
-GROUP=(web docker database security network)
-```
-
-The script automatically looks for the corresponding files:
-
-```text
-services/web.txt
-services/docker.txt
-services/database.txt
-services/security.txt
-services/network.txt
-```
-
-To add another category, create a new `.txt` file and add its name to the `GROUP` array.
-
-For example:
-
-```bash
-GROUP=(web docker database security network monitoring)
-```
-
-Then create:
-
-```text
-services/monitoring.txt
-```
-
-and add the services you want to monitor.
 
 ## Requirements
 
-The script requires:
+* Linux
+* Bash 4+
+* `systemd` / `systemctl`
+* GNU/Linux utilities:
+  * `grep`
+  * `df`
+  * `du`
+  * `tar`
+  * `find`
+  * `awk`
+  * `sort`
+  * `head`
+  * `cut`
+* Network utilities:
+  * `ip` (iproute2)
+  * `ping` (iputils)
+  * `curl`
+  * `getent`
+* `sudo` for service restart operations
 
-- Linux
-- Bash
-- systemd / `systemctl`
-- `curl`
-- Standard Linux utilities
-
-The monitored services must be managed by systemd.
-
-Some distributions use different service names.
-
-For example:
-
-```text
-Ubuntu/Debian: ssh
-RHEL/CentOS/Fedora: sshd
-```
-
-Make sure the service names in your configuration files match the names used by your system.
+Some modules require elevated privileges to access system information or perform administrative operations.
 
 ## Installation
 
 Clone the repository:
 
 ```bash
-git clone <repository-url>
-cd <repository-directory>
+git clone https://github.com/Ahapovich/Master-script.git
+cd Master-script
 ```
 
-Make the script executable:
+Make the scripts executable:
 
 ```bash
-chmod +x for.sh
+chmod +x masterscript.sh
+chmod +x backupS/backupscriptf
+chmod +x diskscript/discheck.sh
+chmod +x logscript/scriptlog.sh
+chmod +x network-healthcheck/network-check.sh
+chmod +x service-healthcheck/service-healthcheck.sh
 ```
 
-Create the Telegram configuration files if you want to use Telegram notifications:
+## Configuration
+
+### Service Health Check
+
+The service checker uses five configuration files located in `service-healthcheck/services/`:
+
+| File | Service category |
+|---|---|
+| `web.txt` | Web servers |
+| `docker.txt` | Container platforms |
+| `database.txt` | Database services |
+| `security.txt` | Security services |
+| `network.txt` | Network services |
+
+Each file contains the systemd service names to monitor, one per line.
+
+The Service Health Check also requires Telegram bot credentials:
+
+```text
+service-healthcheck/
+├── CHATID.txt
+└── TOKEN.txt
+```
+
+* `TOKEN.txt` — Telegram bot token
+* `CHATID.txt` — Telegram chat ID
+
+Both files must contain valid values before starting the service checker.
+
+**Security note:** Never commit real Telegram credentials or other sensitive information to a public repository. Keep these files empty in the repository and provide your own local credentials.
+
+## Usage
+
+Start the toolkit with administrative privileges:
 
 ```bash
-touch TOKEN.txt
-touch CHATID.txt
+sudo ./masterscript.sh
 ```
 
-Add your Telegram Bot Token to `TOKEN.txt`:
+Select a module from the interactive menu and follow the instructions displayed in the terminal.
+
+### 1. Network Health Check
+
+The network checker performs several tests to identify common connectivity problems.
+
+It checks:
+
+* Active IPv4 network interfaces
+* Default gateway configuration and reachability
+* Internet connectivity by pinging `1.1.1.1`
+* DNS resolution using `google.com`
+* HTTPS connectivity using `google.com`
+
+Example output:
 
 ```text
-123456789:ABCdefGhIJKlmNoPQRsTUVwxyZ123456789
+Checking network interface...
+[OK] Network interface is active
+
+[OK] Default gateway: 192.168.1.1
+[OK] Default gateway is reachable
+
+Checking internet connectivity...
+[OK] Internet connection is available
+
+Checking DNS resolution...
+[OK] DNS resolution is working
+
+Checking HTTPS connectivity...
+[OK] HTTPS connection is working
+
+The network check was successful
 ```
 
-Add your Telegram Chat ID to `CHATID.txt`:
+The script returns exit code `0` when all checks pass and `1` when at least one check fails.
 
-```text
-987654321
-```
+### 2. Service Health Check
 
-Configure the service lists inside the `services/` directory.
+The service checker monitors configured systemd services.
 
-## Telegram Notifications
+If a service is inactive, the script attempts to restart it up to two times, waiting three seconds between attempts.
 
-Telegram notifications are optional.
+If the service remains unavailable, it records the failure and sends a Telegram notification.
 
-If a monitored service is down, the script attempts to restart it. If the service remains unavailable after all restart attempts, it is added to the alert report.
-
-### 1. Create a Telegram Bot
-
-Open Telegram and search for:
-
-```text
-@BotFather
-```
-
-Use:
-
-```text
-/newbot
-```
-
-Follow the instructions and save the Bot Token provided by BotFather.
-
-### 2. Configure the Bot Token
-
-Create:
-
-```text
-TOKEN.txt
-```
-
-Put your bot token inside the file.
-
-### 3. Configure the Chat ID
-
-Create:
-
-```text
-CHATID.txt
-```
-
-Put your Telegram Chat ID inside the file.
-
-For a private conversation, start the bot first by sending it a message.
-
-## Security
-
-**Never commit your Telegram Bot Token or Chat ID to Git.**
-
-Add the following files to `.gitignore`:
-
-```text
-TOKEN.txt
-CHATID.txt
-```
-
-The files contain sensitive credentials and should remain only on the local system.
-
-If you are sharing the project, users should create their own `TOKEN.txt` and `CHATID.txt` files locally.
-
-## Running the Script
-
-Run the script with:
-
-```bash
-sudo ./for.sh
-```
-
-or:
-
-```bash
-sudo bash for.sh
-```
-
-`sudo` is required because the script may attempt to restart system services.
-
-The script will process every service listed in the configured service files.
-
-## Example Output
+Example:
 
 ```text
 ------ WEB SERVICES ------
@@ -260,156 +226,187 @@ nginx is working
 apache2 is down. Attempting to restore...
   Attempt 1 of 2...
   apache2 successfully restored!
-
------- DOCKER SERVICES ------
-
-docker is working
-containerd is working
-
------- DATABASE SERVICES ------
-
-postgresql is working
-redis is down. Attempting to restore...
-  Attempt 1 of 2...
-  Attempt 2 of 2...
 ```
 
-If a service cannot be restored, it is added to the alert report.
+Service categories and monitored services can be customized through the configuration files in `service-healthcheck/services/`.
 
-Example Telegram notification:
+### 3. Log Check
+
+The log checker accepts two arguments:
+
+1. A log file path
+2. A keyword or pattern to search for
+
+Example:
 
 ```text
-ALERT! These services are not working:
+Enter the details:
 
-WEB:
-  - apache2
-
-DATABASE:
-  - redis
+/var/log/syslog
+ERR
 ```
 
-## Self-Healing
+The script verifies that the file exists and is readable before searching it with `grep`.
 
-The script includes a basic self-healing mechanism.
-
-When a monitored service is detected as inactive, the script attempts to restart it automatically.
-
-The number of restart attempts is controlled by:
-
-```bash
-MAX_ATTEMPTS=2
-```
-
-After every restart attempt, the script waits and checks the service status again.
-
-If the service becomes active, it is considered successfully restored.
-
-If all attempts fail, the service is added to the Telegram alert.
-
-### Recovery Flow
+Supported examples:
 
 ```text
-Service check
-      ↓
-Service is down
-      ↓
-Attempt restart
-      ↓
-Wait 3 seconds
-      ↓
-Check service again
-      ↓
- ┌───────────────┐
- │               │
- OK              FAIL
- ↓               ↓
-Continue       Retry
-                  ↓
-             MAX_ATTEMPTS
-                  ↓
-               Alert
+ERR
+FAIL
+CRITICAL
 ```
 
-## How It Works
+### 4. Backup
 
-The script processes the configured service groups:
+The backup module creates compressed archives of selected files or directories.
+
+It requires three arguments:
+
+* Source path
+* Backup destination directory
+* Retention period in days
+
+Example:
 
 ```text
-GROUP
-  ↓
-services/<group>.txt
-  ↓
-Read service name
-  ↓
-systemctl is-active
-  ↓
-Working / Not working
-  ↓
-Attempt restart if necessary
-  ↓
-Verify service status
-  ↓
-Collect failed services
-  ↓
-Send Telegram alert if recovery fails
+Source: /home/user/documents
+Backup directory: /home/user/backups
+Retention: 7
 ```
 
-The script uses:
+The resulting archive uses the following naming format:
 
-- a `for` loop to process service categories
-- a `while` loop to read individual service files
-- arrays to store groups and failed services
-- `if` statements to check service status
-- `systemctl` to manage services
-- `curl` to communicate with the Telegram Bot API
+```text
+backup_YYYY-MM-DD_HH_MM_SS.tar.gz
+```
 
-## Bash Concepts Demonstrated
+After creating the backup, the script removes matching archives older than the configured retention period.
 
-This project demonstrates:
+### 5. Disk Check
 
-- Variables
-- Arrays
-- `for` loops
-- `while` loops
-- `if` statements
-- Regular expressions with `=~`
-- `continue`
-- Arithmetic operations
-- File existence checks
-- Reading files with `read`
-- Input redirection
-- Command substitution
-- Array expansion
-- String manipulation
-- `systemctl`
-- `curl`
-- Telegram Bot API
-- Basic configuration management
-- `.gitignore`
-- Basic secret management
-- Service recovery logic
+The disk checker accepts a file or directory path and displays its size along with filesystem usage information.
+
+It uses predefined thresholds:
+
+| Filesystem usage | Status |
+|---|---|
+| Up to 70% | Normal |
+| Above 70% and up to 85% | Warning |
+| Above 85% | Critical |
+
+When filesystem usage exceeds 85%, the script displays the ten largest entries on the affected filesystem to help identify storage-consuming directories and files.
+
+## Input Validation and Error Handling
+
+The project includes basic input validation and error handling to prevent common errors.
+
+Examples include:
+
+* Checking the number of required arguments
+* Verifying that files and directories exist
+* Checking file readability and directory permissions
+* Validating numeric retention values
+* Handling missing configuration files
+* Using exit codes to indicate success, warnings, or errors
+
+The goal is to make the scripts safer and more predictable when used from the command line.
+
+## CI — GitHub Actions
+
+The project includes a GitHub Actions workflow for automatic Bash syntax validation.
+
+Workflow location:
+
+```text
+.github/workflows/bash-check.yml
+```
+
+The workflow:
+
+* Runs automatically on every push
+* Uses an Ubuntu 24.04 runner
+* Checks out the repository
+* Finds Bash scripts by their shebang
+* Validates syntax using `bash -n`
+* Fails the workflow if a syntax error is detected
+
+This helps catch Bash syntax errors before changes are integrated into the main branch.
+
+## Technologies
+
+* **Bash**
+* Linux
+* Git and GitHub
+* GitHub Actions
+* YAML
+* GNU Core Utilities
+* `systemd` / `systemctl`
+* `grep`
+* `tar`
+* `df`
+* `du`
+* `iproute2`
+* `curl`
+* `ping`
+* Telegram Bot API
+
+## What I Practiced
+
+This project was created as a practical Linux administration and Bash scripting exercise.
+
+It helped practice:
+
+* Bash variables
+* Command-line arguments
+* Conditional statements (`if`)
+* `case` statements
+* `for` and `while` loops
+* Functions
+* Exit codes
+* Input validation
+* File and directory operations
+* Pipes and command substitution
+* Process management
+* `grep`, `awk`, and `find`
+* `df` and `du`
+* `tar`
+* `systemctl`
+* Network diagnostics
+* HTTP requests with `curl`
+* Git branching and remote repositories
+* CI automation with GitHub Actions
+* YAML workflow configuration
+
+## Project Goal
+
+The main goal of the project is to build practical Linux administration skills through small, reusable automation tasks.
+
+The project is also part of my transition toward **Linux / DevOps / Infrastructure Engineering**, with a focus on learning how to automate common system administration tasks using Bash.
 
 ## Future Improvements
 
-Possible improvements for future versions:
+Possible future improvements include:
 
-- Add disk and RAM monitoring
-- Add CPU usage monitoring
-- Add service recovery notifications
-- Add logging
-- Add command-line arguments
-- Add configurable alert thresholds
-- Improve error handling
-- Add support for different notification methods
-- Add more detailed service statistics
-- Improve configuration validation
-- Add a dry-run mode
-- Add more robust handling of `sudo` permissions
+* Add logging to the toolkit itself
+* Add colored terminal output
+* Improve error handling and reporting
+* Add command-line arguments to the Master Script
+* Improve configuration file handling
+* Add CPU and RAM monitoring
+* Add Docker health checks
+* Add system resource monitoring
+* Expand CI with ShellCheck and automated functional tests
 
-## Disclaimer
+## Status
 
-This is a learning project created to practice Bash scripting and basic Linux/DevOps concepts.
+🟢 **Active development**
 
-It is **not intended to replace a production monitoring or service management system**.
+The current version contains five system administration modules combined into one interactive Bash toolkit, along with automated Bash syntax validation using GitHub Actions.
 
-Use the self-healing functionality with caution, especially on production systems.
+The project will continue to evolve as I progress with Linux, networking, Docker, CI/CD, cloud infrastructure, and DevOps.
+
+---
+
+**Author:** [Ahapovich](https://github.com/Ahapovich)
+
+**Repository:** [Master-script](https://github.com/Ahapovich/Master-script)

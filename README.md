@@ -1,38 +1,42 @@
 # Bash Toolkit
 
-A collection of Bash scripts for basic Linux system administration, monitoring, and maintenance.
+A collection of Bash scripts for Linux system administration, monitoring, and maintenance.
 
 The project combines several independent Bash scripts into one **Master Script** with an interactive menu. Each module performs a specific system administration task, including service monitoring, log analysis, backup management, disk usage monitoring, and network diagnostics.
 
 ## Features
 
 * 🔧 **Service Health Check**
-  * Checks the status of selected system services
+  * Monitors selected Linux system services
   * Detects inactive or failed services
-  * Attempts to restart failed services
-  * Supports optional Telegram notifications
-  * Allows configuration of monitored services
+  * Attempts to restart failed services (up to two attempts)
+  * Waits three seconds between restart attempts
+  * Groups monitored services by category
+  * Sends Telegram notifications when services cannot be restored
 
 * 📋 **Log Check**
-  * Searches log files for specified keywords
+  * Searches log files for specified keywords or patterns
   * Supports keywords such as `ERR`, `FAIL`, and `CRITICAL`
   * Checks whether the specified log file exists and is readable
-  * Helps identify potential issues in system logs
+  * Uses `grep` for log analysis
 
 * 💾 **Backup**
-  * Creates compressed `.tar.gz` backups
+  * Creates compressed `.tar.gz` archives
   * Allows the user to specify the source directory
-  * Supports configurable backup retention
-  * Removes old backup archives according to the selected retention period
+  * Allows the user to specify the backup destination
+  * Supports configurable backup retention in days
+  * Automatically deletes old archives matching `backup_*.tar.gz`
 
 * 💿 **Disk Check**
-  * Displays disk usage information
-  * Checks filesystem usage against predefined thresholds
-  * Identifies filesystems with high disk utilization
-  * Displays the largest directories and files for investigation
+  * Displays file or directory size
+  * Displays filesystem usage information
+  * Checks storage utilization against predefined thresholds
+  * Shows a warning when usage exceeds 70%
+  * Reports a critical state when usage exceeds 85%
+  * Displays the ten largest entries on the affected filesystem
 
 * 🌐 **Network Health Check**
-  * Checks active network interfaces
+  * Checks for an active network interface with an IPv4 address
   * Detects the default gateway
   * Tests gateway connectivity
   * Checks internet connectivity using ICMP
@@ -56,16 +60,21 @@ Master-script/
 │   └── scriptlog.sh
 ├── network-healthcheck/
 │   ├── network-check.sh
-│   ├── README.md
-│   └── services/
+│   └── README.md
 ├── service-healthcheck/
+│   ├── services/
+│   │   ├── web.txt
+│   │   ├── docker.txt
+│   │   ├── database.txt
+│   │   ├── security.txt
+│   │   └── network.txt
 │   ├── service-healthcheck.sh
-│   ├── README.md
-│   └── services/
+│   ├── CHATID.txt
+│   └── TOKEN.txt
 └── masterscript.sh
 ```
 
-The `masterscript.sh` file provides an interactive menu:
+The `masterscript.sh` file provides the main interactive menu:
 
 ```text
 ========================
@@ -84,21 +93,25 @@ The `masterscript.sh` file provides an interactive menu:
 
 * Linux
 * Bash 4+
-* `systemd` for service monitoring
-* Standard GNU/Linux utilities:
+* `systemd` / `systemctl`
+* GNU/Linux utilities:
   * `grep`
   * `df`
   * `du`
   * `tar`
-  * `systemctl`
   * `find`
+  * `awk`
+  * `sort`
+  * `head`
+  * `cut`
 * Network utilities:
   * `ip` (iproute2)
   * `ping` (iputils)
   * `curl`
   * `getent`
+* `sudo` for service restart operations
 
-Some operations may require elevated privileges depending on the services, log files, or directories being accessed.
+Some modules require elevated privileges to access system information or perform administrative operations.
 
 ## Installation
 
@@ -120,15 +133,46 @@ chmod +x network-healthcheck/network-check.sh
 chmod +x service-healthcheck/service-healthcheck.sh
 ```
 
-Run the toolkit:
+## Configuration
+
+### Service Health Check
+
+The service checker uses five configuration files located in `service-healthcheck/services/`:
+
+| File | Service category |
+|---|---|
+| `web.txt` | Web servers |
+| `docker.txt` | Container platforms |
+| `database.txt` | Database services |
+| `security.txt` | Security services |
+| `network.txt` | Network services |
+
+Each file contains the systemd service names to monitor, one per line.
+
+The Service Health Check also requires Telegram bot credentials:
+
+```text
+service-healthcheck/
+├── CHATID.txt
+└── TOKEN.txt
+```
+
+* `TOKEN.txt` — Telegram bot token
+* `CHATID.txt` — Telegram chat ID
+
+Both files must contain valid values before starting the service checker.
+
+**Security note:** Never commit real Telegram credentials or other sensitive information to a public repository. Keep these files empty in the repository and provide your own local credentials.
+
+## Usage
+
+Start the toolkit with administrative privileges:
 
 ```bash
 sudo ./masterscript.sh
 ```
 
-## Usage
-
-After starting the Master Script, select one of the available modules from the interactive menu and follow the instructions displayed in the terminal.
+Select a module from the interactive menu and follow the instructions displayed in the terminal.
 
 ### 1. Network Health Check
 
@@ -136,11 +180,11 @@ The network checker performs several tests to identify common connectivity probl
 
 It checks:
 
-* Whether an active network interface with an IPv4 address exists
-* Whether the default gateway is configured and reachable
-* Whether an external IP address is reachable
-* Whether DNS resolution works
-* Whether an HTTPS connection can be established
+* Active IPv4 network interfaces
+* Default gateway configuration and reachability
+* Internet connectivity by pinging `1.1.1.1`
+* DNS resolution using `google.com`
+* HTTPS connectivity using `google.com`
 
 Example output:
 
@@ -163,41 +207,46 @@ Checking HTTPS connectivity...
 The network check was successful
 ```
 
+The script returns exit code `0` when all checks pass and `1` when at least one check fails.
+
 ### 2. Service Health Check
 
-The service checker verifies the status of configured system services.
+The service checker monitors configured systemd services.
 
-It detects inactive or failed services and attempts to restart them.
+If a service is inactive, the script attempts to restart it up to two times, waiting three seconds between attempts.
+
+If the service remains unavailable, it records the failure and sends a Telegram notification.
 
 Example:
 
 ```text
-Checking services...
+------ WEB SERVICES ------
 
-docker: active
-ssh: active
-nginx: failed
-
-Attempting to restart nginx...
+nginx is working
+apache2 is down. Attempting to restore...
+  Attempt 1 of 2...
+  apache2 successfully restored!
 ```
 
-The list of monitored services is configurable through files located in `service-healthcheck/services/`.
-
-The module also supports optional Telegram notifications.
+Service categories and monitored services can be customized through the configuration files in `service-healthcheck/services/`.
 
 ### 3. Log Check
 
-The log checker accepts:
+The log checker accepts two arguments:
 
-1. A log file
-2. A keyword to search for
+1. A log file path
+2. A keyword or pattern to search for
 
 Example:
 
 ```text
-Enter log file: /var/log/syslog
-Enter keyword: ERR
+Enter the details:
+
+/var/log/syslog
+ERR
 ```
+
+The script verifies that the file exists and is readable before searching it with `grep`.
 
 Supported examples:
 
@@ -207,46 +256,45 @@ FAIL
 CRITICAL
 ```
 
-The search is performed using `grep`.
-
 ### 4. Backup
 
-The backup module creates compressed archives of selected directories.
+The backup module creates compressed archives of selected files or directories.
 
-The user can specify:
+It requires three arguments:
 
-* Source directory
-* Backup directory
+* Source path
+* Backup destination directory
 * Retention period in days
-
-Example output:
-
-```text
-Creating backup...
-
-Backup completed successfully:
-backup_2026-09-10.tar.gz
-```
-
-Backups are stored as compressed `.tar.gz` archives.
-
-### 5. Disk Check
-
-The disk checker provides an overview of filesystem usage.
-
-It uses `df` to check disk utilization and predefined thresholds to identify potentially problematic filesystems.
 
 Example:
 
 ```text
-Disk usage:
-
-/      62%
-/home  74%
-/data  89%  WARNING
+Source: /home/user/documents
+Backup directory: /home/user/backups
+Retention: 7
 ```
 
-The script can also identify directories consuming significant amounts of disk space, helping with basic troubleshooting when a filesystem starts running out of space.
+The resulting archive uses the following naming format:
+
+```text
+backup_YYYY-MM-DD_HH_MM_SS.tar.gz
+```
+
+After creating the backup, the script removes matching archives older than the configured retention period.
+
+### 5. Disk Check
+
+The disk checker accepts a file or directory path and displays its size along with filesystem usage information.
+
+It uses predefined thresholds:
+
+| Filesystem usage | Status |
+|---|---|
+| Up to 70% | Normal |
+| Above 70% and up to 85% | Warning |
+| Above 85% | Critical |
+
+When filesystem usage exceeds 85%, the script displays the ten largest entries on the affected filesystem to help identify storage-consuming directories and files.
 
 ## Input Validation and Error Handling
 
@@ -254,13 +302,12 @@ The project includes basic input validation and error handling to prevent common
 
 Examples include:
 
-* Checking the number of arguments
-* Verifying that files exist
-* Checking whether files are readable
-* Checking whether directories exist
-* Validating user input
-* Handling missing parameters
-* Using exit codes to indicate success or failure
+* Checking the number of required arguments
+* Verifying that files and directories exist
+* Checking file readability and directory permissions
+* Validating numeric retention values
+* Handling missing configuration files
+* Using exit codes to indicate success, warnings, or errors
 
 The goal is to make the scripts safer and more predictable when used from the command line.
 
@@ -280,10 +327,10 @@ The workflow:
 * Uses an Ubuntu 24.04 runner
 * Checks out the repository
 * Finds Bash scripts by their shebang
-* Validates script syntax using `bash -n`
+* Validates syntax using `bash -n`
 * Fails the workflow if a syntax error is detected
 
-This provides an automated way to catch syntax errors before integrating changes into the main branch.
+This helps catch Bash syntax errors before changes are integrated into the main branch.
 
 ## Technologies
 
@@ -291,6 +338,7 @@ This provides an automated way to catch syntax errors before integrating changes
 * Linux
 * Git and GitHub
 * GitHub Actions
+* YAML
 * GNU Core Utilities
 * `systemd` / `systemctl`
 * `grep`
@@ -300,6 +348,7 @@ This provides an automated way to catch syntax errors before integrating changes
 * `iproute2`
 * `curl`
 * `ping`
+* Telegram Bot API
 
 ## What I Practiced
 
@@ -309,7 +358,7 @@ It helped practice:
 
 * Bash variables
 * Command-line arguments
-* `if` statements
+* Conditional statements (`if`)
 * `case` statements
 * `for` and `while` loops
 * Functions
@@ -317,12 +366,13 @@ It helped practice:
 * Input validation
 * File and directory operations
 * Pipes and command substitution
-* Process substitution
-* `grep`
+* Process management
+* `grep`, `awk`, and `find`
 * `df` and `du`
 * `tar`
 * `systemctl`
 * Network diagnostics
+* HTTP requests with `curl`
 * Git branching and remote repositories
 * CI automation with GitHub Actions
 * YAML workflow configuration
@@ -339,20 +389,19 @@ Possible future improvements include:
 
 * Add logging to the toolkit itself
 * Add colored terminal output
-* Improve error handling
-* Add command-line arguments in addition to the interactive menu
-* Improve configuration file support
-* Expand network diagnostics
+* Improve error handling and reporting
+* Add command-line arguments to the Master Script
+* Improve configuration file handling
 * Add CPU and RAM monitoring
 * Add Docker health checks
 * Add system resource monitoring
-* Expand CI checks with ShellCheck and automated tests
+* Expand CI with ShellCheck and automated functional tests
 
 ## Status
 
 🟢 **Active development**
 
-The current version contains five system administration modules combined into one interactive Bash toolkit, along with an automated Bash syntax check using GitHub Actions.
+The current version contains five system administration modules combined into one interactive Bash toolkit, along with automated Bash syntax validation using GitHub Actions.
 
 The project will continue to evolve as I progress with Linux, networking, Docker, CI/CD, cloud infrastructure, and DevOps.
 
