@@ -1,0 +1,19 @@
+
+name: Bash Syntax Check
+
+on:
+  push:
+
+jobs:
+  syntax-check:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Check Bash syntax
+        run: |
+          find . -type f -exec grep -l '^#!/bin/bash' {} \; |
+          while read -r file; do
+            bash -n "$file" || exit 1
+          done
