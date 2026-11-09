@@ -1,117 +1,55 @@
-# Bash Toolkit
+# Network Health Check
 
-A collection of Bash scripts for Linux system administration, monitoring, and maintenance.
+A Bash script for checking basic network connectivity and identifying common network configuration problems on Linux systems.
 
-The project combines several independent Bash scripts into one **Master Script** with an interactive menu. Each module performs a specific system administration task, including service monitoring, log analysis, backup management, disk usage monitoring, and network diagnostics.
+The script performs several diagnostic checks, starting with the local network interface and default gateway, followed by internet connectivity, DNS resolution, and HTTPS connectivity.
 
 ## Features
 
-* 🔧 **Service Health Check**
-  * Monitors selected Linux system services
-  * Detects inactive or failed services
-  * Attempts to restart failed services (up to two attempts)
-  * Waits three seconds between restart attempts
-  * Groups monitored services by category
-  * Sends Telegram notifications when services cannot be restored
+* 🌐 **Network Interface Check**
+  * Checks for an active network interface with a global IPv4 address.
+  * Detects whether the system has an IPv4 network configuration.
 
-* 📋 **Log Check**
-  * Searches log files for specified keywords or patterns
-  * Supports keywords such as `ERR`, `FAIL`, and `CRITICAL`
-  * Checks whether the specified log file exists and is readable
-  * Uses `grep` for log analysis
+* 🚪 **Default Gateway Check**
+  * Detects the configured default gateway using the routing table.
+  * Checks whether the gateway responds to ICMP requests.
 
-* 💾 **Backup**
-  * Creates compressed `.tar.gz` archives
-  * Allows the user to specify the source directory
-  * Allows the user to specify the backup destination
-  * Supports configurable backup retention in days
-  * Automatically deletes old archives matching `backup_*.tar.gz`
+* 🌍 **Internet Connectivity Check**
+  * Tests external connectivity by sending ICMP requests to `1.1.1.1`.
+  * Helps identify basic internet connectivity problems.
 
-* 💿 **Disk Check**
-  * Displays file or directory size
-  * Displays filesystem usage information
-  * Checks storage utilization against predefined thresholds
-  * Shows a warning when usage exceeds 70%
-  * Reports a critical state when usage exceeds 85%
-  * Displays the ten largest entries on the affected filesystem
+* 🔎 **DNS Resolution Check**
+  * Verifies DNS resolution using `getent`.
+  * Uses `google.com` as the test hostname.
 
-* 🌐 **Network Health Check**
-  * Checks for an active network interface with an IPv4 address
-  * Detects the default gateway
-  * Tests gateway connectivity
-  * Checks internet connectivity using ICMP
-  * Verifies DNS resolution
-  * Tests HTTPS connectivity
+* 🔒 **HTTPS Connectivity Check**
+  * Tests an HTTPS connection to `google.com`.
+  * Uses `curl` with a five-second connection timeout.
 
-## Project Structure
-
-The project is organized into separate directories for each system administration module.
-
-```text
-Master-script/
-├── .github/
-│   └── workflows/
-│       └── bash-check.yml
-├── backupS/
-│   └── backupscriptf
-├── diskscript/
-│   └── discheck.sh
-├── logscript/
-│   └── scriptlog.sh
-├── network-healthcheck/
-│   ├── network-check.sh
-│   └── README.md
-├── service-healthcheck/
-│   ├── services/
-│   │   ├── web.txt
-│   │   ├── docker.txt
-│   │   ├── database.txt
-│   │   ├── security.txt
-│   │   └── network.txt
-│   ├── service-healthcheck.sh
-│   ├── CHATID.txt
-│   └── TOKEN.txt
-└── masterscript.sh
-```
-
-The `masterscript.sh` file provides the main interactive menu:
-
-```text
-========================
-      BASH TOOLKIT
-========================
-
-1. Network Health Check
-2. Service Health Check
-3. Log Check
-4. Backup
-5. Disk Check
-0. Exit
-```
+* 📊 **Diagnostic Summary**
+  * Displays individual test results.
+  * Counts failed checks.
+  * Returns an exit code depending on the overall result.
 
 ## Requirements
 
 * Linux
-* Bash 4+
-* `systemd` / `systemctl`
-* GNU/Linux utilities:
-  * `grep`
-  * `df`
-  * `du`
-  * `tar`
-  * `find`
-  * `awk`
-  * `sort`
-  * `head`
-  * `cut`
-* Network utilities:
-  * `ip` (iproute2)
-  * `ping` (iputils)
-  * `curl`
-  * `getent`
-* `sudo` for service restart operations
+* Bash
+* `ip` (iproute2)
+* `grep`
+* `awk`
+* `ping` (iputils)
+* `getent`
+* `curl`
 
-Some modules require elevated privileges to access system information or perform administrative operations.
+Most of these utilities are available by default on common Linux distributions.
+
+On Ubuntu, missing packages can be installed with:
+
+```bash
+sudo apt update
+sudo apt install iproute2 iputils-ping curl
+```
 
 ## Installation
 
@@ -122,73 +60,108 @@ git clone https://github.com/Ahapovich/Master-script.git
 cd Master-script
 ```
 
-Make the scripts executable:
+Make the script executable:
 
 ```bash
-chmod +x masterscript.sh
-chmod +x backupS/backupscriptf
-chmod +x diskscript/discheck.sh
-chmod +x logscript/scriptlog.sh
 chmod +x network-healthcheck/network-check.sh
-chmod +x service-healthcheck/service-healthcheck.sh
 ```
-
-## Configuration
-
-### Service Health Check
-
-The service checker uses five configuration files located in `service-healthcheck/services/`:
-
-| File | Service category |
-|---|---|
-| `web.txt` | Web servers |
-| `docker.txt` | Container platforms |
-| `database.txt` | Database services |
-| `security.txt` | Security services |
-| `network.txt` | Network services |
-
-Each file contains the systemd service names to monitor, one per line.
-
-The Service Health Check also requires Telegram bot credentials:
-
-```text
-service-healthcheck/
-├── CHATID.txt
-└── TOKEN.txt
-```
-
-* `TOKEN.txt` — Telegram bot token
-* `CHATID.txt` — Telegram chat ID
-
-Both files must contain valid values before starting the service checker.
-
-**Security note:** Never commit real Telegram credentials or other sensitive information to a public repository. Keep these files empty in the repository and provide your own local credentials.
 
 ## Usage
 
-Start the toolkit with administrative privileges:
+Run the script directly:
+
+```bash
+./network-healthcheck/network-check.sh
+```
+
+Alternatively, launch the main toolkit:
 
 ```bash
 sudo ./masterscript.sh
 ```
 
-Select a module from the interactive menu and follow the instructions displayed in the terminal.
-
-### 1. Network Health Check
-
-The network checker performs several tests to identify common connectivity problems.
-
-It checks:
-
-* Active IPv4 network interfaces
-* Default gateway configuration and reachability
-* Internet connectivity by pinging `1.1.1.1`
-* DNS resolution using `google.com`
-* HTTPS connectivity using `google.com`
-
-Example output:
+Then select:
 
 ```text
+1. Network Health Check
+```
+
+The network checker does not require Telegram configuration or root privileges for its standard checks.
+
+## Diagnostic Checks
+
+The script performs five main checks.
+
+### 1. Network Interface
+
+Checks whether the system has at least one network interface with a global IPv4 address.
+
+Example:
+
+```text
+[OK] Network interface is active
+```
+
+If no global IPv4 address is found:
+
+```text
+[FAIL] No active network interface with IPv4 address
+```
+
+### 2. Default Gateway
+
+Retrieves the default gateway from the system routing table and tests its reachability using `ping`.
+
+Example:
+
+```text
+[OK] Default gateway: 192.168.1.1
+[OK] Default gateway is reachable
+```
+
+### 3. Internet Connectivity
+
+Sends two ICMP requests to the public IP address `1.1.1.1`.
+
+Example:
+
+```text
+[OK] Internet connection is available
+```
+
+This check tests IP connectivity without relying on DNS resolution.
+
+### 4. DNS Resolution
+
+Uses `getent ahostsv4` to check whether the hostname `google.com` can be resolved to an IPv4 address.
+
+Example:
+
+```text
+[OK] DNS resolution is working
+```
+
+### 5. HTTPS Connectivity
+
+Uses `curl` to establish an HTTPS connection to `google.com`.
+
+The connection attempt has a five-second timeout.
+
+Example:
+
+```text
+[OK] HTTPS connection is working
+```
+
+## Example Output
+
+Successful diagnostic run:
+
+```text
+========================
+   NETWORK HEALTH CHECK
+========================
+
 Checking network interface...
 [OK] Network interface is active
 
@@ -207,203 +180,76 @@ Checking HTTPS connectivity...
 The network check was successful
 ```
 
-The script returns exit code `0` when all checks pass and `1` when at least one check fails.
-
-### 2. Service Health Check
-
-The service checker monitors configured systemd services.
-
-If a service is inactive, the script attempts to restart it up to two times, waiting three seconds between attempts.
-
-If the service remains unavailable, it records the failure and sends a Telegram notification.
-
-Example:
+If one or more checks fail, the script displays the corresponding `[FAIL]` messages and finishes with:
 
 ```text
------- WEB SERVICES ------
-
-nginx is working
-apache2 is down. Attempting to restore...
-  Attempt 1 of 2...
-  apache2 successfully restored!
+The network check failed
 ```
 
-Service categories and monitored services can be customized through the configuration files in `service-healthcheck/services/`.
+## Exit Codes
 
-### 3. Log Check
-
-The log checker accepts two arguments:
-
-1. A log file path
-2. A keyword or pattern to search for
-
-Example:
-
-```text
-Enter the details:
-
-/var/log/syslog
-ERR
-```
-
-The script verifies that the file exists and is readable before searching it with `grep`.
-
-Supported examples:
-
-```text
-ERR
-FAIL
-CRITICAL
-```
-
-### 4. Backup
-
-The backup module creates compressed archives of selected files or directories.
-
-It requires three arguments:
-
-* Source path
-* Backup destination directory
-* Retention period in days
-
-Example:
-
-```text
-Source: /home/user/documents
-Backup directory: /home/user/backups
-Retention: 7
-```
-
-The resulting archive uses the following naming format:
-
-```text
-backup_YYYY-MM-DD_HH_MM_SS.tar.gz
-```
-
-After creating the backup, the script removes matching archives older than the configured retention period.
-
-### 5. Disk Check
-
-The disk checker accepts a file or directory path and displays its size along with filesystem usage information.
-
-It uses predefined thresholds:
-
-| Filesystem usage | Status |
+| Exit code | Meaning |
 |---|---|
-| Up to 70% | Normal |
-| Above 70% and up to 85% | Warning |
-| Above 85% | Critical |
+| `0` | All network checks passed |
+| `1` | One or more network checks failed |
 
-When filesystem usage exceeds 85%, the script displays the ten largest entries on the affected filesystem to help identify storage-consuming directories and files.
-
-## Input Validation and Error Handling
-
-The project includes basic input validation and error handling to prevent common errors.
-
-Examples include:
-
-* Checking the number of required arguments
-* Verifying that files and directories exist
-* Checking file readability and directory permissions
-* Validating numeric retention values
-* Handling missing configuration files
-* Using exit codes to indicate success, warnings, or errors
-
-The goal is to make the scripts safer and more predictable when used from the command line.
-
-## CI — GitHub Actions
-
-The project includes a GitHub Actions workflow for automatic Bash syntax validation.
-
-Workflow location:
-
-```text
-.github/workflows/bash-check.yml
-```
-
-The workflow:
-
-* Runs automatically on every push
-* Uses an Ubuntu 24.04 runner
-* Checks out the repository
-* Finds Bash scripts by their shebang
-* Validates syntax using `bash -n`
-* Fails the workflow if a syntax error is detected
-
-This helps catch Bash syntax errors before changes are integrated into the main branch.
+The script counts failed checks internally and returns `1` if at least one diagnostic test fails.
 
 ## Technologies
 
-* **Bash**
-* Linux
-* Git and GitHub
-* GitHub Actions
-* YAML
-* GNU Core Utilities
-* `systemd` / `systemctl`
-* `grep`
-* `tar`
-* `df`
-* `du`
+* Bash
+* Linux networking
+* IP routing
+* ICMP / `ping`
+* DNS resolution
+* HTTPS
 * `iproute2`
 * `curl`
-* `ping`
-* Telegram Bot API
+* `getent`
+* `grep`
+* `awk`
 
 ## What I Practiced
 
-This project was created as a practical Linux administration and Bash scripting exercise.
+This module was created to practice basic network diagnostics and Linux command-line tools.
 
 It helped practice:
 
-* Bash variables
-* Command-line arguments
-* Conditional statements (`if`)
-* `case` statements
-* `for` and `while` loops
-* Functions
-* Exit codes
-* Input validation
-* File and directory operations
-* Pipes and command substitution
-* Process management
-* `grep`, `awk`, and `find`
-* `df` and `du`
-* `tar`
-* `systemctl`
-* Network diagnostics
-* HTTP requests with `curl`
-* Git branching and remote repositories
-* CI automation with GitHub Actions
-* YAML workflow configuration
+* Reading the Linux routing table
+* Identifying network interfaces
+* Working with IPv4 addresses
+* Checking default gateway configuration
+* Testing connectivity with `ping`
+* Understanding the difference between IP connectivity and DNS resolution
+* Testing HTTPS connectivity with `curl`
+* Using `getent` for hostname resolution
+* Conditional statements and arithmetic operations in Bash
+* Functions and exit codes
+* Combining Linux utilities through pipes
 
 ## Project Goal
 
-The main goal of the project is to build practical Linux administration skills through small, reusable automation tasks.
+The goal of this module is to automate basic network diagnostics using Bash and Linux networking utilities.
 
-The project is also part of my transition toward **Linux / DevOps / Infrastructure Engineering**, with a focus on learning how to automate common system administration tasks using Bash.
+It is designed to identify common connectivity problems and provide a quick overview of the system's network status.
 
 ## Future Improvements
 
-Possible future improvements include:
+Possible improvements include:
 
-* Add logging to the toolkit itself
-* Add colored terminal output
-* Improve error handling and reporting
-* Add command-line arguments to the Master Script
-* Improve configuration file handling
-* Add CPU and RAM monitoring
-* Add Docker health checks
-* Add system resource monitoring
-* Expand CI with ShellCheck and automated functional tests
+* Add configurable test IP addresses and hostnames
+* Add IPv6 connectivity checks
+* Add network interface details
+* Improve diagnostic messages to identify possible causes of failure
+* Add configurable timeouts and retry counts
+* Add optional logging
+* Integrate additional network tests
 
 ## Status
 
 🟢 **Active development**
 
-The current version contains five system administration modules combined into one interactive Bash toolkit, along with automated Bash syntax validation using GitHub Actions.
-
-The project will continue to evolve as I progress with Linux, networking, Docker, CI/CD, cloud infrastructure, and DevOps.
+This module is part of the [Bash Toolkit](https://github.com/Ahapovich/Master-script), a collection of Bash scripts for Linux system administration and monitoring.
 
 ---
 
