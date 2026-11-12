@@ -17,3 +17,8 @@ jobs:
           while read -r file; do
             bash -n "$file" || exit 1
           done
+
+      - name: Run ShellCheck
+        uses: ludeeus/action-shellcheck@master
+        with:
+          scandir: .
