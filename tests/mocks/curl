@@ -1,0 +1,10 @@
+#!/bin/bash
+
+echo "MOCK CURL CALLED: $*"
+
+if [[ "$MOCK_CURL" == "true" ]]; then
+    exit 0
+else
+    echo "ERROR: MOCK_CURL is not enabled"
+    exit 2
+fi

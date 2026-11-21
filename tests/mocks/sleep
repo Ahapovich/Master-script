@@ -1,0 +1,4 @@
+#!/bin/bash
+
+echo "MOCK SLEEP CALLED: $*"
+exit 0

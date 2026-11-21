@@ -1,0 +1,37 @@
+#!/bin/bash
+
+STATE_FILE="$BATS_TEST_TMPDIR/IPWORK"
+TEST_FILE="$BATS_TEST_TMPDIR/GATEWAYWORK"
+
+
+if [[ "$1" == "route" ]]; then
+		if [[ -f "$TEST_FILE" ]]; then
+	
+	        if [[ "$MOCK_IP_SERVICE" == "true" ]]; then
+		        echo "default via 192.0.0.1 dev test"
+	            exit 0
+	        else
+	            exit 1
+	        fi
+		else
+	echo "default via 192.0.0.1 dev test"
+	exit 0
+	fi
+else
+
+    if [[ -f "$STATE_FILE" ]]; then
+
+        if [[ "$MOCK_IP_SERVICE" == "true" ]]; then
+        	echo "test inet 192.0.0.1/0 scope global test"
+            exit 0
+        else
+            exit 1
+        fi
+
+    else
+    	echo "test inet 192.0.0.1/0 scope global test"
+    	exit 0
+    fi
+fi
+
+exit 0

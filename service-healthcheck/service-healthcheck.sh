@@ -12,7 +12,7 @@ TOKEN=$(cat TOKEN.txt | tr -d '[:space:]')
 CHAT_ID=$(cat CHATID.txt | tr -d '[:space:]')
 alert="0"
 BADTYPE=()
-MAX_ATTEMPTS=2
+MAX_ATTEMPTS="2"
 
 for G in "${GROUP[@]}"
 	do
@@ -68,4 +68,10 @@ then
 curl -s -X POST "https://api.telegram.org/bot$TOKEN/sendMessage" \
      -d "chat_id=$CHAT_ID" \
      -d "text=$MESSEAGET"
+fi
+
+if [ "$alert" -ge 1 ]; then
+    exit 1
+else
+    exit 0
 fi

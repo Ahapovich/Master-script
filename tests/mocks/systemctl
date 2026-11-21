@@ -1,0 +1,24 @@
+#!/bin/bash
+
+STATE_FILE="$BATS_TEST_TMPDIR/service_restarted"
+
+echo "MOCK SYSTEMCTL CALLED: $*"
+
+if [[ "$1" == "is-active" ]]; then
+
+    if [[ -f "$STATE_FILE" ]]; then
+
+        if [[ "$MOCK_SERVICE_RECOVERY" == "true" ]]; then
+            exit 0
+        else
+            exit 1
+        fi
+
+    else
+        exit 1
+    fi
+
+elif [[ "$1" == "restart" ]]; then
+    touch "$STATE_FILE"
+    exit 0
+fi
