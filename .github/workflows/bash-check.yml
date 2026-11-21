@@ -22,3 +22,11 @@ jobs:
         uses: ludeeus/action-shellcheck@master
         with:
           scandir: .
+          
+      - name: Install Bats
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y bats
+
+      - name: Run Bats tests
+        run: bats tests/*.bats
