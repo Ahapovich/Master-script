@@ -3,6 +3,7 @@ name: Bash Syntax Check
 
 on:
   push:
+  pull_request:
 
 jobs:
   syntax-check:
