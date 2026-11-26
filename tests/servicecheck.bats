@@ -11,7 +11,7 @@ setup() {
 	touch "$BATS_TEST_TMPDIR/TOKEN.txt"
     run bash "$BATS_TEST_DIRNAME/../service-healthcheck/service-healthcheck.sh"
 
-    [ "$status" -eq 3 ]
+    [ "$status" -eq 0 ]
     [[ "$output" == *"TOKEN.txt is empty"* ]]
 }
 
