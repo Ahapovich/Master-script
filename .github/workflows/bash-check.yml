@@ -1,3 +1,4 @@
+
 name: Bash Syntax Check
 
 on:
@@ -9,7 +10,7 @@ on:
       - '**.bats'
       - '**.yml'
       - '**.yaml'
-      
+
   pull_request:
     branches:
       - main
@@ -22,6 +23,7 @@ on:
 jobs:
   syntax-check:
     runs-on: ubuntu-24.04
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v5
@@ -33,45 +35,150 @@ jobs:
             bash -n "$file" || exit 1
           done
 
+      - name: Success bash
+        if: success()
+        run: echo "Bash syntax check passed" > bash-report.txt
+
+      - name: Failure bash
+        if: failure()
+        run: echo "Bash syntax check failed" > bash-report.txt
+
+      - name: Upload Bash report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: bash-report
+          path: bash-report.txt
+          if-no-files-found: warn
+
   shell-check:
     runs-on: ubuntu-24.04
+
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v5   
-        
+        uses: actions/checkout@v5
+
       - name: Run ShellCheck
         uses: ludeeus/action-shellcheck@master
         with:
           scandir: .
 
-  bats-check:         
+      - name: Success shell
+        if: success()
+        run: echo "ShellCheck passed" > shell-report.txt
+
+      - name: Failure shell
+        if: failure()
+        run: echo "ShellCheck failed" > shell-report.txt
+
+      - name: Upload ShellCheck report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: shell-report
+          path: shell-report.txt
+          if-no-files-found: warn
+
+  bats-check:
     runs-on: ubuntu-24.04
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v5
-        
+
       - name: Install Bats
         run: |
           sudo apt-get update
           sudo apt-get install -y bats
 
       - name: Run Bats tests
-        run: bats tests/*.bats > test-results.txt 2>&1
+        run: bats tests/*.bats > bats-report.txt 2>&1
 
-      - name: Upload test report
+      - name: Create fallback Bats report
+        if: always()
+        run: |
+          if [ ! -f bats-report.txt ]; then
+            echo "Bats tests did not run." > bats-report.txt
+          fi
+
+      - name: Upload Bats report
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: bats-report
-          path: test-results.txt
+          path: bats-report.txt
+          if-no-files-found: warn
 
   report:
-      needs: [syntax-check, shell-check, bats-check] 
-      runs-on: ubuntu-24.04
-      steps:
-        - name: Download test report
-          uses: actions/download-artifact@v4
-          with:
-            name: bats-report
-        
-        - name: Display test report
-          run: cat test-results.txt
+    needs: [syntax-check, shell-check, bats-check]
+    if: always()
+    runs-on: ubuntu-24.04
+
+    steps:
+      - name: Download Bash report
+        uses: actions/download-artifact@v4
+        continue-on-error: true
+        with:
+          name: bash-report
+
+      - name: Download ShellCheck report
+        uses: actions/download-artifact@v4
+        continue-on-error: true
+        with:
+          name: shell-report
+
+      - name: Download Bats report
+        uses: actions/download-artifact@v4
+        continue-on-error: true
+        with:
+          name: bats-report
+
+      - name: Create full report
+        run: |
+          for file in bash-report.txt shell-report.txt bats-report.txt; do
+            echo "===== $file ====="
+
+            if [ -f "$file" ]; then
+              cat "$file"
+            else
+              echo "Report unavailable."
+            fi
+
+            echo ""
+          done > full-report.txt
+
+      - name: Upload full report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: full-report
+          path: full-report.txt
+
+  telegram-not:
+    needs: [syntax-check, shell-check, bats-check, report]
+    if: always() && github.event_name == 'push'
+    runs-on: ubuntu-24.04
+
+    env:
+      TOKEN: ${{ secrets.TELEGRAM_TOKEN }}
+      CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+
+    steps:
+      - name: Download full report
+        uses: actions/download-artifact@v4
+        continue-on-error: true
+        with:
+          name: full-report
+
+      - name: Telegram Notifications
+        run: |
+          if [ -f full-report.txt ]; then
+            REPORT_TEXT="$(cat full-report.txt)"
+          else
+            REPORT_TEXT="CI finished, but the full report is unavailable."
+          fi
+
+          curl --silent --show-error --fail-with-body \
+            -X POST "https://api.telegram.org/bot$TOKEN/sendMessage" \
+            -d "chat_id=$CHAT_ID" \
+            --data-urlencode "text=$REPORT_TEXT"
