@@ -9,7 +9,6 @@ on:
       - '**.bats'
       - '**.yml'
       - '**.yaml'
-      - '**.yml'
       
   pull_request:
     branches:
@@ -19,8 +18,7 @@ on:
       - '**.bats'
       - '**.yml'
       - '**.yaml'
-      - '**.yml'
-      
+
 jobs:
   syntax-check:
     runs-on: ubuntu-24.04
@@ -58,4 +56,22 @@ jobs:
           sudo apt-get install -y bats
 
       - name: Run Bats tests
-        run: bats tests/*.bats
+        run: bats tests/*.bats > test-results.txt 2>&1
+
+      - name: Upload test report
+        uses: actions/upload-artifact@v4
+        with:
+          name: bats-report
+          path: test-results.txt
+
+  report:
+      needs: [syntax-check, shell-check, bats-check] 
+      runs-on: ubuntu-24.04
+      steps:
+        - name: Download test report
+          uses: actions/download-artifact@v4
+          with:
+            name: bats-report
+        
+        - name: Display test report
+          run: cat test-results.txt
